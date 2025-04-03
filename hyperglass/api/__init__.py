@@ -1,23 +1,33 @@
 """hyperglass API."""
+
 # Standard Library
 import logging
 
 # Third Party
 from litestar import Litestar
-from litestar.openapi import OpenAPIConfig
+from litestar.di import Provide
 from litestar.exceptions import HTTPException, ValidationException
+from litestar.openapi import OpenAPIConfig
 from litestar.static_files import create_static_files_router
 
-# Project
-from hyperglass.state import use_state
 from hyperglass.constants import __version__
 from hyperglass.exceptions import HyperglassError
 
+# Project
+from hyperglass.state import use_state
+
+from .dependencies import authenticate
+from .error_handlers import (
+    app_handler,
+    default_handler,
+    http_handler,
+    validation_handler,
+)
+
 # Local
 from .events import check_redis
-from .routes import info, query, device, devices, queries
 from .middleware import COMPRESSION_CONFIG, create_cors_config
-from .error_handlers import app_handler, http_handler, default_handler, validation_handler
+from .routes import device, devices, info, queries, query
 
 __all__ = ("app",)
 
@@ -47,10 +57,17 @@ if not STATE.settings.disable_ui:
     HANDLERS = [
         *HANDLERS,
         create_static_files_router(
-            path="/images", directories=[IMAGES_DIR], name="images", include_in_schema=False
+            path="/images",
+            directories=[IMAGES_DIR],
+            name="images",
+            include_in_schema=False,
         ),
         create_static_files_router(
-            path="/", directories=[UI_DIR], name="ui", html_mode=True, include_in_schema=False
+            path="/",
+            directories=[UI_DIR],
+            name="ui",
+            html_mode=True,
+            include_in_schema=False,
         ),
     ]
 
@@ -64,6 +81,7 @@ app = Litestar(
         Exception: default_handler,
     },
     on_startup=[check_redis],
+    dependencies={"authentication": Provide(authenticate)},
     debug=STATE.settings.debug,
     cors_config=create_cors_config(state=STATE),
     compression_config=COMPRESSION_CONFIG,
