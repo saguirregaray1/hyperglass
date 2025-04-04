@@ -7,6 +7,7 @@ import logging
 from litestar import Litestar
 from litestar.di import Provide
 from litestar.exceptions import HTTPException, ValidationException
+from litestar.middleware import DefineMiddleware
 from litestar.openapi import OpenAPIConfig
 from litestar.static_files import create_static_files_router
 
@@ -25,7 +26,7 @@ from .error_handlers import (
 
 # Local
 from .events import check_redis
-from .middleware import COMPRESSION_CONFIG, create_cors_config
+from .middleware import COMPRESSION_CONFIG, CustomAuthMiddleware, create_cors_config
 from .routes import device, devices, info, queries, query
 
 __all__ = ("app",)
@@ -82,6 +83,7 @@ app = Litestar(
     on_startup=[check_redis],
     debug=STATE.settings.debug,
     cors_config=create_cors_config(state=STATE),
+    middleware=[DefineMiddleware(CustomAuthMiddleware)],
     compression_config=COMPRESSION_CONFIG,
     openapi_config=OPEN_API if STATE.params.docs.enable else None,
 )
