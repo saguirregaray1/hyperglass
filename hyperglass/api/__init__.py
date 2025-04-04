@@ -26,7 +26,7 @@ from .error_handlers import (
 
 # Local
 from .events import check_redis
-from .middleware import COMPRESSION_CONFIG, CustomAuthMiddleware, create_cors_config
+from .middleware import COMPRESSION_CONFIG, create_cors_config
 from .routes import device, devices, info, queries, query
 
 __all__ = ("app",)
