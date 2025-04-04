@@ -54,6 +54,35 @@ class MyDocument extends Document<DocumentExtra> {
     return (
       <Html lang="en">
         <Head>
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (async function() {
+                  try {
+                    const response = await fetch('http://localhost:8000/auth/token/', {
+                      method: 'POST',
+                      credentials: 'include',
+                      headers: {
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({ email: 'admin@example.com', password: 'String123.' })
+                    });
+                    if (!response.ok) {
+                      throw new Error('Login error! Status: ' + response.status);
+                    }
+                    // Override global fetch so that all requests include credentials.
+                    const originalFetch = window.fetch;
+                    window.fetch = (...args) => {
+                      const options = args[1] || {};
+                      return originalFetch(args[0], { ...options, credentials: 'include' });
+                    };
+                  } catch (error) {
+                    console.error('Authentication failed:', error);
+                  }
+                })();
+              `,
+            }}
+          />
           <meta name="language" content="en" />
           <meta httpEquiv="Content-Type" content="text/html" />
           <meta charSet="UTF-8" />
