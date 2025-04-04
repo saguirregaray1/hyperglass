@@ -83,7 +83,6 @@ app = Litestar(
     on_startup=[check_redis],
     debug=STATE.settings.debug,
     cors_config=create_cors_config(state=STATE),
-    middleware=[DefineMiddleware(CustomAuthMiddleware)],
     compression_config=COMPRESSION_CONFIG,
     openapi_config=OPEN_API if STATE.params.docs.enable else None,
 )

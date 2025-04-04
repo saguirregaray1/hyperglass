@@ -9,11 +9,8 @@ from litestar.config.compression import CompressionConfig
 
 # Third Party
 from litestar.config.cors import CORSConfig
-from litestar.connection import ASGIConnection
+from litestar.connection import Request
 from litestar.exceptions import NotAuthorizedException
-from litestar.middleware import AbstractAuthenticationMiddleware, AuthenticationResult
-
-from hyperglass.log import log
 
 if t.TYPE_CHECKING:
     # Project
@@ -29,28 +26,19 @@ REQUEST_LOG_FIELDS = ("method", "path", "path_params", "query")
 RESPONSE_LOG_FIELDS = ("status_code",)
 
 
-class CustomAuthMiddleware(AbstractAuthenticationMiddleware):
-    async def authenticate_request(
-        self, connection: ASGIConnection
-    ) -> AuthenticationResult:
-        token = connection.cookies.get("access_token")
-        secret_key = os.getenv("SECRET_KEY")
+async def authenticate_guard(request: Request) -> None:
+    token = request.cookies.get("access_token")
+    secret_key = os.getenv("SECRET_KEY")
 
-        log.debug("Entering authenticate middleware")
+    if not token:
+        raise NotAuthorizedException(detail="Not authenticated")
 
-        if not token:
-            raise NotAuthorizedException(detail="Not authenticated")
-
-        log.debug(f"token {token}")
-
-        try:
-            jwt.decode(token, secret_key, algorithms=["HS256"])
-        except jwt.ExpiredSignatureError as err:
-            raise NotAuthorizedException(detail="Expired token") from err
-        except jwt.InvalidTokenError as err:
-            raise NotAuthorizedException(detail="Invalid token") from err
-
-        return AuthenticationResult(user=None, auth=token)
+    try:
+        jwt.decode(token, secret_key, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError as err:
+        raise NotAuthorizedException(detail="Expired token") from err
+    except jwt.InvalidTokenError as err:
+        raise NotAuthorizedException(detail="Invalid token") from err
 
 
 def create_cors_config(state: "HyperglassState") -> CORSConfig:

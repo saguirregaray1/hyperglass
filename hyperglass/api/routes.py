@@ -47,7 +47,7 @@ __all__ = (
         "authenticate": Provide(authenticate),
     },
 )
-async def device(devices: Devices, id: str) -> APIDevice:
+async def device(devices: Devices, id: str, authenticate: None) -> APIDevice:
     """Retrieve a device by ID."""
     return devices[id].export_api()
 
@@ -59,7 +59,7 @@ async def device(devices: Devices, id: str) -> APIDevice:
         "authenticate": Provide(authenticate),
     },
 )
-async def devices(devices: Devices) -> t.List[APIDevice]:
+async def devices(devices: Devices, authenticate: None) -> t.List[APIDevice]:
     """Retrieve all devices."""
     return devices.export_api()
 
@@ -71,7 +71,7 @@ async def devices(devices: Devices) -> t.List[APIDevice]:
         "authenticate": Provide(authenticate),
     },
 )
-async def queries(devices: Devices) -> t.List[str]:
+async def queries(devices: Devices, authenticate: None) -> t.List[str]:
     """Retrieve all directive names."""
     return devices.directive_names()
 
@@ -80,7 +80,7 @@ async def queries(devices: Devices) -> t.List[str]:
     "/api/info",
     dependencies={"params": Provide(get_params), "authenticate": Provide(authenticate)},
 )
-async def info(params: Params) -> APIParams:
+async def info(params: Params, authenticate: None) -> APIParams:
     """Retrieve looking glass parameters."""
     return params.export_api()
 
@@ -90,7 +90,7 @@ async def info(params: Params) -> APIParams:
     dependencies={"_state": Provide(get_state), "authenticate": Provide(authenticate)},
 )
 async def query(
-    _state: HyperglassState, request: Request, data: Query
+    _state: HyperglassState, authenticate: None, request: Request, data: Query
 ) -> QueryResponse:
     """Ingest request data pass it to the backend application to perform the query."""
 
