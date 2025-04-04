@@ -16,7 +16,6 @@ from hyperglass.exceptions import HyperglassError
 # Project
 from hyperglass.state import use_state
 
-from .dependencies import authenticate
 from .error_handlers import (
     app_handler,
     default_handler,
@@ -81,7 +80,6 @@ app = Litestar(
         Exception: default_handler,
     },
     on_startup=[check_redis],
-    dependencies={"authentication": Provide(authenticate)},
     debug=STATE.settings.debug,
     cors_config=create_cors_config(state=STATE),
     compression_config=COMPRESSION_CONFIG,

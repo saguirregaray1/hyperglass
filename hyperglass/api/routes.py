@@ -8,25 +8,28 @@ from datetime import UTC, datetime
 
 # Third Party
 from litestar import Request, Response, get, post
-from litestar.di import Provide
 from litestar.background_tasks import BackgroundTask
+from litestar.di import Provide
+
+from hyperglass.exceptions import HyperglassError
+from hyperglass.execution.main import execute
 
 # Project
 from hyperglass.log import log
-from hyperglass.state import HyperglassState
-from hyperglass.exceptions import HyperglassError
 from hyperglass.models.api import Query
-from hyperglass.models.data import OutputDataModel
-from hyperglass.util.typing import is_type
-from hyperglass.execution.main import execute
 from hyperglass.models.api.response import QueryResponse
-from hyperglass.models.config.params import Params, APIParams
-from hyperglass.models.config.devices import Devices, APIDevice
+from hyperglass.models.config.devices import APIDevice, Devices
+from hyperglass.models.config.params import APIParams, Params
+from hyperglass.models.data import OutputDataModel
+from hyperglass.state import HyperglassState
+from hyperglass.util.typing import is_type
+
+from .dependencies import authenticate
+from .fake_output import fake_output
 
 # Local
-from .state import get_state, get_params, get_devices
+from .state import get_devices, get_params, get_state
 from .tasks import send_webhook
-from .fake_output import fake_output
 
 __all__ = (
     "device",
@@ -37,32 +40,58 @@ __all__ = (
 )
 
 
-@get("/api/devices/{id:str}", dependencies={"devices": Provide(get_devices)})
+@get(
+    "/api/devices/{id:str}",
+    dependencies={
+        "devices": Provide(get_devices),
+        "authenticate": Provide(authenticate),
+    },
+)
 async def device(devices: Devices, id: str) -> APIDevice:
     """Retrieve a device by ID."""
     return devices[id].export_api()
 
 
-@get("/api/devices", dependencies={"devices": Provide(get_devices)})
+@get(
+    "/api/devices",
+    dependencies={
+        "devices": Provide(get_devices),
+        "authenticate": Provide(authenticate),
+    },
+)
 async def devices(devices: Devices) -> t.List[APIDevice]:
     """Retrieve all devices."""
     return devices.export_api()
 
 
-@get("/api/queries", dependencies={"devices": Provide(get_devices)})
+@get(
+    "/api/queries",
+    dependencies={
+        "devices": Provide(get_devices),
+        "authenticate": Provide(authenticate),
+    },
+)
 async def queries(devices: Devices) -> t.List[str]:
     """Retrieve all directive names."""
     return devices.directive_names()
 
 
-@get("/api/info", dependencies={"params": Provide(get_params)})
+@get(
+    "/api/info",
+    dependencies={"params": Provide(get_params), "authenticate": Provide(authenticate)},
+)
 async def info(params: Params) -> APIParams:
     """Retrieve looking glass parameters."""
     return params.export_api()
 
 
-@post("/api/query", dependencies={"_state": Provide(get_state)})
-async def query(_state: HyperglassState, request: Request, data: Query) -> QueryResponse:
+@post(
+    "/api/query",
+    dependencies={"_state": Provide(get_state), "authenticate": Provide(authenticate)},
+)
+async def query(
+    _state: HyperglassState, request: Request, data: Query
+) -> QueryResponse:
     """Ingest request data pass it to the backend application to perform the query."""
 
     timestamp = datetime.now(UTC)
@@ -115,7 +144,9 @@ async def query(_state: HyperglassState, request: Request, data: Query) -> Query
         _log.debug("Runtime: {!s} seconds", elapsedtime)
 
         if output is None:
-            raise HyperglassError(message=_state.params.messages.general, alert="danger")
+            raise HyperglassError(
+                message=_state.params.messages.general, alert="danger"
+            )
 
         json_output = is_type(output, OutputDataModel)
 

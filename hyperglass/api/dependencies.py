@@ -4,11 +4,17 @@ import jwt
 from litestar import Request
 from litestar.exceptions import HTTPException
 
+from hyperglass.log import log
+
 
 async def authenticate(request: Request) -> None:
     """Authenticate user using PCI's Secret Key."""
     token = request.cookies.get("access_token")
     secret_key = os.getenv("SECRET_KEY")
+
+    log.debug("Entering authenticate")
+    log.debug(f"token {token}")
+
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
