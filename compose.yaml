@@ -14,6 +14,8 @@ services:
             - HYPEGLASS_DISABLE_UI=${HYPEGLASS_DISABLE_UI-false}
             - HYPERGLASS_CONTAINER=${HYPERGLASS_CONTAINER-true}
             - HYPERGLASS_ORIGINAL_APP_PATH=${HYPERGLASS_APP_PATH}
+            - HTTP_PROXY=http://172.29.99.245:3128
+            - HTTPS_PROXY=http://172.29.99.245:3128
         build: .
         ports:
             - "${HYPERGLASS_PORT-8001}:${HYPERGLASS_PORT-8001}"
